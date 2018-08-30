@@ -107,7 +107,15 @@ namespace LibVLCSharp.Shared
 #elif MAC
         internal const string LibraryName = "@rpath/VLCKit.framework/VLCKit";
 #else
-        internal const string LibraryName = "libvlc";    
+        /// <summary>
+        /// libvlc builds for Android are usually named "libvlcjni". 
+        /// For Xamarin.Android, since I do the JNI setup (call JNI_OnLoad, AWindow handling) and to ease with crossplatform 
+        /// P/Invoke calls, I decided to rename it to just libvlc(.so).
+        /// For Unity, I don't do the JNI integration (mostly performed in MediaPlayer.Create(LibVLC) 
+        /// and the native Unity plugin expects "libvlcjni".
+        /// </summary>
+        internal const string LibraryName = "libvlcjni";
 #endif
+        internal const string UnityPlugin = "VlcUnityWrapper";
     }
 }

@@ -629,9 +629,34 @@ namespace LibVLCSharp.Shared
                 EntryPoint = "libvlc_media_player_set_android_context")]
             internal static extern void LibVLCMediaPlayerSetAndroidContext(IntPtr mediaPlayer, IntPtr aWindow);
 #endif
+
+            //TODO: Compilation directive for Unity?
+            [SuppressUnmanagedCodeSecurity]
+            [DllImport(Constants.UnityPlugin)]
+            internal static extern IntPtr CreateAndInitMediaPlayer(IntPtr libvlc);
+
+            [SuppressUnmanagedCodeSecurity]
+            [DllImport(Constants.UnityPlugin, EntryPoint = "getVideoFrameVLC")]
+            internal static extern IntPtr GetFrame(out bool updated);
         }
-        
+
         MediaPlayerEventManager _eventManager;
+
+        /// <summary>
+        /// This is a helper method to ease creating and configuring a MediaPlayer on Unity.Android.
+        /// By just passing it a LibVLC object, it handles JNI_OnLoad, AWindow creation for off screen HW and setting the 
+        /// Android Context. The C# JNI bindings from Xamarin.Android (Java.Interop) differ from the Unity.Android way.
+        /// </summary>
+        /// <param name="libvlc">A libvlc object</param>
+        /// <returns>a MediaPlayer object</returns>
+        public static MediaPlayer Create(LibVLC libvlc)
+        {
+            if (libvlc == null)
+                throw new NullReferenceException(nameof(libvlc));
+
+            var mpPtr = Native.CreateAndInitMediaPlayer(libvlc.NativeReference);
+            return new MediaPlayer(mpPtr);
+        }
 
         /// <summary>Create an empty Media Player object</summary>
         /// <param name="libVLC">
@@ -654,7 +679,16 @@ namespace LibVLCSharp.Shared
             : base(() => Native.LibVLCMediaPlayerNewFromMedia(media.NativeReference), Native.LibVLCMediaPlayerRelease)
         {
         }
-        
+
+        /// <summary>
+        /// Use this constructor when the mediaplayer has been already created on the native side
+        /// </summary>
+        /// <param name="mediaPlayerPtr">pointer to the mediaPlayer in the native side</param>
+        public MediaPlayer(IntPtr mediaPlayerPtr)
+            : base(() => mediaPlayerPtr, Native.LibVLCMediaPlayerRelease)
+        {
+        }
+
         /// <summary>
         /// Get the media used by the media_player.
         /// Set the media that will be used by the media_player. 
@@ -1622,15 +1656,27 @@ namespace LibVLCSharp.Shared
         public bool SetRenderer(RendererItem rendererItem) =>
             Native.LibVLCMediaPlayerSetRenderer(NativeReference, rendererItem.NativeReference) == 0;
 
-#region Enums
+        /// <summary>
+        /// Retrieve a video frame from the Unity plugin.
+        /// </summary>
+        /// <param name="updated">True if the video frame has been updated</param>
+        /// <returns>A decoded texture</returns>
+        public IntPtr GetFrame(out bool updated)
+        {
+            var frame = Native.GetFrame(out bool isUpdated);
+            updated = isUpdated;
+            return frame;
+        }
 
-     
+        #region Enums
 
 
-#endregion
 
-#region Callbacks
-        
+
+        #endregion
+
+        #region Callbacks
+
         /// <summary>
         /// <para>A LibVLC media player plays one media (usually in a custom drawable).</para>
         /// <para>@{</para>
