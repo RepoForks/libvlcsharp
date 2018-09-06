@@ -637,7 +637,7 @@ namespace LibVLCSharp.Shared
 
             [SuppressUnmanagedCodeSecurity]
             [DllImport(Constants.UnityPlugin, EntryPoint = "getVideoFrameVLC")]
-            internal static extern IntPtr GetFrame(out bool updated);
+            internal static extern IntPtr GetFrame(IntPtr mediaPlayer, out bool updated);
         }
 
         MediaPlayerEventManager _eventManager;
@@ -1663,7 +1663,7 @@ namespace LibVLCSharp.Shared
         /// <returns>A decoded texture</returns>
         public IntPtr GetFrame(out bool updated)
         {
-            var frame = Native.GetFrame(out bool isUpdated);
+            var frame = Native.GetFrame(NativeReference, out bool isUpdated);
             updated = isUpdated;
             return frame;
         }
